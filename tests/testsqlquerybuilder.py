@@ -12,9 +12,8 @@ class TestSqlQueryBuilder(unittest.TestCase):
         table_name = "dbo.test"
         query = (
             "select \n"
-            "   c.colid ColumnID,\n"
             "   c.name as ColumnName,\n"
-            "   t.name as TypeName,\n"
+            "   case when c.name like '%_updDT' then 1 else 0 end as IsUpdDT,\n"
             "   sign(c.status & 128) as IsIdentity\n"
             "from syscolumns as c\n"
             "   inner join systypes as t on c.xtype = t.xtype\n"
