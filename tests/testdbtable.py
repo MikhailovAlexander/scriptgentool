@@ -1,4 +1,5 @@
 import unittest
+from unittest.mock import MagicMock
 from datetime import datetime
 from core.dbtable import DbTable
 from core.sqlquerybuilder import SqlQueryBuilder
@@ -39,56 +40,30 @@ WORK_DB_NAME = "work"
 CLEAR_DB_NAME = "clear"
 
 
-def init_function():
-    return [[col,
-             1 if col == UPDATE_DT_COL else 0,
-             1 if col == PRIMARY_KEY_COL else 0] for col in COLUMNS]
-
-
-class CursorStub(object):
-    def __init__(self, stub_function=init_function):
-        self.__stub = stub_function
-
-    def change_stub(self, stub_function):
-        self.__stub = stub_function
-
-    def execute(self, query, *args):
-        pass
-
-    def fetchall(self):
-        return self.__stub()
-
-
 class TestDbTable(unittest.TestCase):
     templates = SqlServerTemplates()
-    cursor = CursorStub()
+    cursor = MagicMock()
+    cursor.execute = MagicMock(return_value=None)
+    cursor.fetchall = MagicMock(return_value=
+                                [[col,
+                                  1 if col == UPDATE_DT_COL else 0,
+                                  1 if col == PRIMARY_KEY_COL else 0]
+                                 for col in COLUMNS])
     queries = SqlQueryBuilder(templates)
     table = DbTable(LOGGER_DICT_STUB, cursor, queries, TABLE_NAME, WORK_DB_NAME,
                     CLEAR_DB_NAME)
 
     def test__init__(self):
-        def stub():
-            return [["test_id", 0, 1],
-                    ["test_val", 0, 0],
-                    ["test_upddt", 1, 0]]
-
-        self.cursor.change_stub(stub)
         table = DbTable(LOGGER_DICT_STUB, self.cursor, self.queries, TABLE_NAME,
                         WORK_DB_NAME, CLEAR_DB_NAME)
         self.assertEqual(table.name, TABLE_NAME)
 
     def test_get_delete_statement_list_empty(self):
-        def stub():
-            return []
-
-        self.cursor.change_stub(stub)
+        self.cursor.fetchall = MagicMock(return_value=[])
         self.assertEqual(self.table.get_delete_statement_list(), [])
 
     def test_get_delete_statement_list_single(self):
-        def stub():
-            return [[123456789]]
-
-        self.cursor.change_stub(stub)
+        self.cursor.fetchall = MagicMock(return_value=[[123456789]])
         str_id_list = "123456789"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
@@ -96,10 +71,8 @@ class TestDbTable(unittest.TestCase):
         self.assertEqual(self.table.get_delete_statement_list(), [statement])
 
     def test_get_delete_statement_list_multi(self):
-        def stub():
-            return [[123456789], [987654321], [111111111]]
-
-        self.cursor.change_stub(stub)
+        self.cursor.fetchall = MagicMock(return_value=[[123456789], [987654321],
+                                                       [111111111]])
         str_id_list = "123456789,987654321,111111111"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
@@ -107,10 +80,8 @@ class TestDbTable(unittest.TestCase):
         self.assertEqual(self.table.get_delete_statement_list(), [statement])
 
     def test_get_delete_statement_list_multi_row_limit(self):
-        def stub():
-            return [[123456789], [987654321], [111111111]]
-
-        self.cursor.change_stub(stub)
+        self.cursor.fetchall = MagicMock(return_value=[[123456789], [987654321],
+                                                       [111111111]])
         str_id_list = ["123456789", "987654321", "111111111"]
         statements = [
             self.templates.delete_statement.format(TABLE_NAME, PRIMARY_KEY_COL,
@@ -120,17 +91,12 @@ class TestDbTable(unittest.TestCase):
         self.assertEqual(self.table.get_delete_statement_list(1), statements)
 
     def test_get_upsert_statement_list_empty(self):
-        def stub():
-            return []
-
-        self.cursor.change_stub(stub)
+        self.cursor.fetchall = MagicMock(return_value=[])
         self.assertEqual(self.table.get_upsert_statement_list(), [])
 
     def test_get_upsert_statement_list_single_row(self):
-        def stub():
-            return [[123456789, 123, 1.23, "test", DT]]
-
-        self.cursor.change_stub(stub)
+        self.cursor.fetchall = MagicMock(return_value=[[123456789, 123, 1.23,
+                                                        "test", DT]])
         values = f"(123456789,123,1.23,'test','{DT_STR}')"
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
@@ -141,12 +107,10 @@ class TestDbTable(unittest.TestCase):
         self.assertEqual(self.table.get_upsert_statement_list(), [statement])
 
     def test_get_upsert_statement_list_multi_rows(self):
-        def stub():
-            return [[123456787, 123, 1.23, "test", DT],
-                    [123456788, None, 1.23, "'quoted'", None],
-                    [123456789, 123, None, "test", DT]]
-
-        self.cursor.change_stub(stub)
+        return_list = [[123456787, 123, 1.23, "test", DT],
+                       [123456788, None, 1.23, "'quoted'", None],
+                       [123456789, 123, None, "test", DT]]
+        self.cursor.fetchall = MagicMock(return_value=return_list)
         values = f"(123456787,123,1.23,'test','{DT_STR}')" + ',\n'+' ' * 8 +\
                  "(123456788,null,1.23,'''quoted''',null)" + ',\n'+' ' * 8 +\
                  f"(123456789,123,null,'test','{DT_STR}')"
@@ -160,14 +124,11 @@ class TestDbTable(unittest.TestCase):
         self.assertEqual(self.table.get_upsert_statement_list(), [statement])
 
     def test_get_upsert_statement_list_multi_row_limit(self):
-        def stub():
-            return [[123456787, 123, 1.23, "test", DT],
-                    [123456788, None, 1.23, "'quoted'", None]]
-
-        self.cursor.change_stub(stub)
+        return_list = [[123456787, 123, 1.23, "test", DT],
+                       [123456788, None, 1.23, "'quoted'", None]]
+        self.cursor.fetchall = MagicMock(return_value=return_list)
         values = [f"(123456787,123,1.23,'test','{DT_STR}')",
                   "(123456788,null,1.23,'''quoted''',null)"]
-
         statements = [self.templates.upsert_statement.format(TABLE_NAME,
                                                              STR_COLUMNS,
                                                              value,
