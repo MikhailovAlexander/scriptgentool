@@ -99,6 +99,15 @@ class TestDbTableConnected(unittest.TestCase):
     def setUp(self):
         self.cursor.execute(TRUNCATE_SCRIPT)
 
+    def __insert_data(self, database_name, values):
+        ins_query = f"""
+        SET IDENTITY_INSERT {database_name}.{TABLE_NAME} ON;
+        INSERT INTO {database_name}.{TABLE_NAME}({STR_COLUMNS})
+        VALUES {values};
+        SET IDENTITY_INSERT {database_name}.{TABLE_NAME} OFF;
+        """
+        self.cursor.execute(ins_query)
+
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test__init__(self):
         self.assertEqual(self.table.name, TABLE_NAME)
@@ -109,13 +118,8 @@ class TestDbTableConnected(unittest.TestCase):
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_delete_statement_list_single(self):
-        ins_query = f"""
-        SET IDENTITY_INSERT {CLEAR_DB_NAME}.{TABLE_NAME} ON;
-        INSERT INTO {CLEAR_DB_NAME}.{TABLE_NAME}({STR_COLUMNS})
-        VALUES(1,1,1.1,'test','{DT_STR}');
-        SET IDENTITY_INSERT {CLEAR_DB_NAME}.{TABLE_NAME} OFF;
-        """
-        self.cursor.execute(ins_query)
+        values = f"(1,1,1.1,'test','{DT_STR}')"
+        self.__insert_data(CLEAR_DB_NAME, values)
         str_id_list = "1"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
@@ -124,15 +128,8 @@ class TestDbTableConnected(unittest.TestCase):
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_delete_statement_list_multi(self):
-        ins_query = f"""
-        SET IDENTITY_INSERT {CLEAR_DB_NAME}.{TABLE_NAME} ON;
-        INSERT INTO {CLEAR_DB_NAME}.{TABLE_NAME}({STR_COLUMNS})
-        VALUES(1,1,1.1,'test','{DT_STR}'),
-        (2,1,1.1,'test','{DT_STR}'),
-        (3,1,1.1,'test','{DT_STR}');
-        SET IDENTITY_INSERT {CLEAR_DB_NAME}.{TABLE_NAME} OFF;
-        """
-        self.cursor.execute(ins_query)
+        values = "(1,1,1.1,'',null),(2,1,1.1,'',null),(3,1,1.1,'',null)"
+        self.__insert_data(CLEAR_DB_NAME, values)
         str_id_list = "1,2,3"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
@@ -141,15 +138,8 @@ class TestDbTableConnected(unittest.TestCase):
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_delete_statement_list_multi_row_limit(self):
-        ins_query = f"""
-        SET IDENTITY_INSERT {CLEAR_DB_NAME}.{TABLE_NAME} ON;
-        INSERT INTO {CLEAR_DB_NAME}.{TABLE_NAME}({STR_COLUMNS})
-        VALUES(1,1,1.1,'test','{DT_STR}'),
-        (2,1,1.1,'test','{DT_STR}'),
-        (3,1,1.1,'test','{DT_STR}');
-        SET IDENTITY_INSERT {CLEAR_DB_NAME}.{TABLE_NAME} OFF;
-        """
-        self.cursor.execute(ins_query)
+        values = "(1,1,1.1,'',null),(2,1,1.1,'',null),(3,1,1.1,'',null)"
+        self.__insert_data(CLEAR_DB_NAME, values)
         str_id_list = ["1", "2", "3"]
         statements = [
             self.templates.delete_statement.format(TABLE_NAME, PRIMARY_KEY_COL,
@@ -165,13 +155,7 @@ class TestDbTableConnected(unittest.TestCase):
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_upsert_statement_list_single_row(self):
         values = "(123456789,123,1.23,'test','2022-03-30 23:19:14.777')"
-        ins_query = f"""
-        SET IDENTITY_INSERT {WORK_DB_NAME}.{TABLE_NAME} ON;
-        INSERT INTO {WORK_DB_NAME}.{TABLE_NAME}({STR_COLUMNS})
-        VALUES{values};
-        SET IDENTITY_INSERT {WORK_DB_NAME}.{TABLE_NAME} OFF;
-        """
-        self.cursor.execute(ins_query)
+        self.__insert_data(WORK_DB_NAME, values)
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
                                                            values,
@@ -185,13 +169,7 @@ class TestDbTableConnected(unittest.TestCase):
         values = f"(123456787,123,1.23,'test',null)" + ',\n'+' ' * 8 +\
                  "(123456788,null,1.23,'''quoted''',null)" + ',\n'+' ' * 8 +\
                  f"(123456789,123,null,'test',null)"
-        ins_query = f"""
-        SET IDENTITY_INSERT {WORK_DB_NAME}.{TABLE_NAME} ON;
-        INSERT INTO {WORK_DB_NAME}.{TABLE_NAME}({STR_COLUMNS})
-        VALUES{values};
-        SET IDENTITY_INSERT {WORK_DB_NAME}.{TABLE_NAME} OFF;
-        """
-        self.cursor.execute(ins_query)
+        self.__insert_data(WORK_DB_NAME, values)
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
                                                            values,
@@ -201,15 +179,9 @@ class TestDbTableConnected(unittest.TestCase):
         self.assertEqual(self.table.get_upsert_statement_list(), [statement])
 
     def test_get_upsert_statement_list_multi_row_limit(self):
-        values = [f"(123456787,123,1.23,'test',null)",
+        values = ["(123456787,123,1.23,'test',null)",
                   "(123456788,null,1.23,'''quoted''',null)"]
-        ins_query = f"""
-        SET IDENTITY_INSERT {WORK_DB_NAME}.{TABLE_NAME} ON;
-        INSERT INTO {WORK_DB_NAME}.{TABLE_NAME}({STR_COLUMNS})
-        VALUES{','.join(values)};
-        SET IDENTITY_INSERT {WORK_DB_NAME}.{TABLE_NAME} OFF;
-        """
-        self.cursor.execute(ins_query)
+        self.__insert_data(WORK_DB_NAME, ','.join(values))
         statements = [self.templates.upsert_statement.format(TABLE_NAME,
                                                              STR_COLUMNS,
                                                              value,
