@@ -129,6 +129,18 @@ class TestDbTable(unittest.TestCase):
         self.assertEqual(table.name, TABLE_NAME)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_subordinate_tables_empty(self):
+        self.assertEqual(self.table.subordinate_tables, tuple())
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_subordinate_tables_single(self):
+        self.assertEqual(self.table.subordinate_tables, False)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_subordinate_tables_multi(self):
+        self.assertEqual(self.table.subordinate_tables, False)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_delete_statement_list_empty(self):
         self.assertEqual(self.table.get_delete_statement_list(), [])
 

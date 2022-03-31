@@ -24,6 +24,15 @@ class TestSqlServerTemplates(unittest.TestCase):
             "order by c.colid\n")
         self.assertEqual(self.templates.column_query, column_query)
 
+    def test_sub_tables_query(self):
+        sub_tables_query = (
+            "select object_schema_name(parent_object_id) + '.'\n"
+            "    + object_name(parent_object_id) as key_name\n"
+            "from sys.foreign_keys\n"
+            "where referenced_object_id = object_id('{0}')\n"
+            "    and type_desc = 'foreign_key_constraint';")
+        self.assertEqual(self.templates.sub_tables_query, sub_tables_query)
+
     def test_search_del_query(self):
         search_del_query = (
             "select clr.{0}\n"

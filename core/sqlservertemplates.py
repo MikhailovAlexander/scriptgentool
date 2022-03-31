@@ -40,6 +40,20 @@ class SqlServerTemplates(SqlTemplates):
             "order by c.colid\n")
 
     @property
+    def sub_tables_query(self) -> str:
+        """SQL query template for getting database table names containing
+        foreign keys to this table.
+        Uses the name of the database table as a placeholder 0.
+        """
+
+        return(
+            "select object_schema_name(parent_object_id) + '.'\n"
+            "    + object_name(parent_object_id) as key_name\n"
+            "from sys.foreign_keys\n"
+            "where referenced_object_id = object_id('{0}')\n"
+            "    and type_desc = 'foreign_key_constraint';")
+
+    @property
     def search_del_query(self) -> str:
         """SQL query template for searching deleted rows in the database table.
         Uses the name of the primary key column as a placeholder 0.

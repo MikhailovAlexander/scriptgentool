@@ -8,6 +8,9 @@ class SqlTemplates(metaclass=ABCMeta):
     -------------------
     column_query: str
         SQL query template for getting database table columns by table name
+    sub_tables_query(self) -> str:
+        SQL query template for getting database table names containing
+        foreign keys to this table.
     search_del_query: str
         SQL query template for searching deleted rows in the database table.
     search_upsert_query: str
@@ -24,6 +27,16 @@ class SqlTemplates(metaclass=ABCMeta):
     @abstractmethod
     def column_query(self) -> str:
         """SQL query template for getting database table columns by table name.
+        Uses the name of the database table as a placeholder 0.
+        """
+
+        pass
+
+    @property
+    @abstractmethod
+    def sub_tables_query(self) -> str:
+        """SQL query template for getting database table names containing
+        foreign keys to this table.
         Uses the name of the database table as a placeholder 0.
         """
 

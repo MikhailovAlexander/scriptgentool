@@ -15,6 +15,9 @@ class DbTable(object):
     ---------
     name(self) -> str:
         Returns the name of database table.
+    subordinate_tables(self) -> tuple[str]:
+        Returns a tuple of database table names containing foreign keys to
+        this table.
 
     Methods
     -------
@@ -61,6 +64,7 @@ class DbTable(object):
         self.__columns: list[str] = []
         self.__work_db_name: str = work_db_name
         self.__clear_db_name: str = clear_db_name
+        self.__subordinate_tables: list[str] = self.__get_subordinate_tables()
         self.__set_columns()
 
     @property
@@ -69,6 +73,14 @@ class DbTable(object):
         :return: the name of database table.
         """
         return self.__name
+
+    @property
+    def subordinate_tables(self) -> tuple[str]:
+        """
+        :return: a tuple of database table names containing foreign keys to
+        this table.
+        """
+        return tuple(self.__subordinate_tables)
 
     def get_delete_statement_list(self, row_limit: int = None) -> list[str]:
         """Compares the data of two database(work and clear), searches id rows
@@ -155,8 +167,18 @@ class DbTable(object):
                 self.__update_dt_field = column_name
             self.__columns.append(column_name)
 
+    def __get_subordinate_tables(self):
+        """Gets a list of database table names containing foreign keys
+        to this table
+        """
+
+        query = self.__queries.get_sub_tables_query(self.__name)
+        result = self.__get_query_result(query)
+        return [str(row[0]) for row in result]
+
     def __get_list_to_delete(self) -> list[str]:
         """Gets id rows to delete."""
+
         query = self.__queries.get_search_del_query(self.__primary_key,
                                                     self.__name,
                                                     self.__work_db_name,
@@ -167,6 +189,7 @@ class DbTable(object):
     def __get_list_to_upsert(self, days_before: int) \
             -> list[list[Union[None, int, float, str, datetime]]]:
         """Gets rows data to update or insert."""
+
         beg_date = None
         if days_before:
             beg_date = datetime.now() - timedelta(days=days_before)
@@ -184,6 +207,7 @@ class DbTable(object):
     def __get_all_rows(self) -> list[list[Union[None, int, float, str,
                                                 datetime]]]:
         """Gets all rows data to insert."""
+
         query = self.__queries.get_all_rows_query(self.__columns,
                                                   self.__work_db_name,
                                                   self.__name)
@@ -194,6 +218,7 @@ class DbTable(object):
                                                                 float, str,
                                                                 datetime]]]:
         """Executes SQL query and gets the query result."""
+
         result = []
         try:
             self.__cursor.execute(query)
@@ -201,5 +226,6 @@ class DbTable(object):
         except DbError as ex:
             self.__logger.exception(ex)
             self.__logger.error(f'query: {query}')
-            raise RuntimeError('query execution failed')
+            #raise RuntimeError('query execution failed')
+            raise RuntimeError(f'query: {query}')
         return result

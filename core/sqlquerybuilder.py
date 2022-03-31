@@ -10,7 +10,10 @@ class SqlQueryBuilder(object):
     Methods
     -------
     get_column_query(self, table_name: str) -> str:
-        builds an SQL query for getting table columns by table name.
+        Builds an SQL query for getting table columns by table name.
+    get_sub_tables_query(self, table_name: str, clear_db_name: str) -> str:
+        Builds an SQL query for getting database table names containing
+        foreign keys to this table.
     get_search_del_query(self, primary_key: str, table_name: str,
                         work_db_name: str, clear_db_name: str) -> str:
         Builds an SQL query for searching deleted rows in the target database
@@ -48,6 +51,15 @@ class SqlQueryBuilder(object):
         """
 
         return self.__templates.column_query.format(table_name)
+
+    def get_sub_tables_query(self, table_name: str) -> str:
+        """Builds an SQL query for getting database table names containing
+        foreign keys to this table.
+
+        :param table_name: the name of the target database table.
+        :return: the text of the SQL query.
+        """
+        return self.__templates.sub_tables_query.format(table_name)
 
     def get_search_del_query(self, primary_key: str, table_name: str,
                              work_db_name: str, clear_db_name: str) -> str:

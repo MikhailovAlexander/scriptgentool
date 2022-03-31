@@ -27,6 +27,11 @@ class TestSqlQueryBuilder(unittest.TestCase):
         query = self.templates.column_query.format(TABLE_NAME)
         self.assertEqual(self.builder.get_column_query(TABLE_NAME), query)
 
+    def test_get_sub_tables_query(self):
+        query = self.templates.sub_tables_query.format(TABLE_NAME)
+        self.assertEqual(self.builder.get_sub_tables_query(TABLE_NAME),
+                         query)
+
     def test_get_search_del_query(self):
         query = self.templates.search_del_query.format(PRIMARY_KEY_COL,
                                                        TABLE_NAME,
