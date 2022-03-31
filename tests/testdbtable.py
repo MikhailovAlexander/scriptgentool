@@ -1,6 +1,6 @@
 import unittest
 from unittest.mock import MagicMock
-from datetime import datetime
+from datetime import datetime, date
 from core.dbtable import DbTable
 from core.sqlquerybuilder import SqlQueryBuilder
 from core.sqlservertemplates import SqlServerTemplates
@@ -39,7 +39,7 @@ LINK_COLUMNS = (',\n' + ' ' * 12).join(["trg.{0} = src.{0}".format(col)
                                         for col in COLUMNS
                                         if col != PRIMARY_KEY_COL])
 INS_COLUMNS = ",".join(["src.{0}".format(col) for col in COLUMNS])
-DT = datetime.now()
+DT = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 DT_STR = DT.isoformat(sep=' ', timespec='milliseconds')
 
 CREATE_TABLE_SCRIPT = f"""
@@ -107,7 +107,8 @@ class TestDbTable(unittest.TestCase):
             cls.connector.close()
 
     def setUp(self):
-        self.cursor.execute(TRUNCATE_SCRIPT)
+        if self.cursor:
+            self.cursor.execute(TRUNCATE_SCRIPT)
 
     def __insert_data(self, database_name, values):
         ins_query = f"""
@@ -293,6 +294,64 @@ class TestDbTable(unittest.TestCase):
                       for value in values]
         self.assertEqual(self.mock_table.get_upsert_statement_list(row_limit=1),
                          statements)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_get_upsert_statement_list_all_rows_empty(self):
+        self.assertEqual(self.table.get_upsert_statement_list(all_rows=True),
+                         [])
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_get_upsert_statement_list_all_rows(self):
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  "(2,1,1.2,'b','1999-03-30 23:19:14.777')"]
+        self.__insert_data(WORK_DB_NAME, ','.join(values))
+        str_values = (',\n'+' ' * 8).join(values)
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           str_values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        self.assertEqual(self.table.get_upsert_statement_list(all_rows=True),
+                         [statement])
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_get_upsert_statement_list_days_before_empty(self):
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  "(2,1,1.2,'b','1999-03-30 23:19:14.777')"]
+        self.__insert_data(WORK_DB_NAME, ','.join(values))
+        self.assertEqual(self.table.get_upsert_statement_list(days_before=1),
+                         [])
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_get_upsert_statement_days_before_single(self):
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  f"(2,1,1.2,'b','{DT_STR}')"]
+        self.__insert_data(WORK_DB_NAME, ','.join(values))
+        str_values = values[1]
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           str_values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        self.assertEqual(self.table.get_upsert_statement_list(days_before=1),
+                         [statement])
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_get_upsert_statement_days_before_multi(self):
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  f"(2,1,1.2,'b','{DT_STR}')", f"(3,1,1.2,'b','{DT_STR}')"]
+        self.__insert_data(WORK_DB_NAME, ','.join(values))
+        str_values = (',\n'+' ' * 8).join(values[1:])
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           str_values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        self.assertEqual(self.table.get_upsert_statement_list(days_before=1),
+                         [statement])
 
 
 if __name__ == '__main__':
