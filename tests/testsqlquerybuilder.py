@@ -2,21 +2,8 @@ import unittest
 from datetime import datetime
 from core.sqlquerybuilder import SqlQueryBuilder
 from core.sqlservertemplates import SqlServerTemplates
-
-TABLE_NAME = "dbo.test"
-PRIMARY_KEY_COL = "test_id"
-UPDATE_DT_COL = "test_upddt"
-INT_COL = "test_int"
-FLOAT_COL = "test_float"
-STR_COL = "test_str"
-COLUMNS = [PRIMARY_KEY_COL, INT_COL, FLOAT_COL, STR_COL, UPDATE_DT_COL]
-STR_COLUMNS = ",".join(COLUMNS)
-LINK_COLUMNS = (',\n' + ' ' * 12).join(["trg.{0} = src.{0}".format(col)
-                                        for col in COLUMNS
-                                        if col != PRIMARY_KEY_COL])
-INS_COLUMNS = ",".join(["src.{0}".format(col) for col in COLUMNS])
-WORK_DB_NAME = "work"
-CLEAR_DB_NAME = "clear"
+from dbconstatnts import TABLE_NAME, PRIMARY_KEY_COL, UPDATE_DT_COL, COLUMNS,\
+    STR_COLUMNS, LINK_COLUMNS, INS_COLUMNS, WORK_DB_NAME, CLEAR_DB_NAME
 
 
 class TestSqlQueryBuilder(unittest.TestCase):
