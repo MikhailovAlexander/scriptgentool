@@ -41,6 +41,30 @@ LINK_COLUMNS = (',\n' + ' ' * 12).join(["trg.{0} = src.{0}".format(col)
 INS_COLUMNS = ",".join(["src.{0}".format(col) for col in COLUMNS])
 DT = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
 DT_STR = DT.isoformat(sep=' ', timespec='milliseconds')
+SUB_TABLES = ["dbo.sub1", "dbo.sub2"]
+
+CREATE_SUB_TABLES_SCRIPTS = [
+    f"""CREATE TABLE dbo.sub1(
+        [sub1_id] [bigint] IDENTITY(1,1) NOT NULL,
+        [{PRIMARY_KEY_COL}] [bigint] NULL,
+     CONSTRAINT [PK_sub1] PRIMARY KEY CLUSTERED ([sub1_id] ASC)
+    ) ON [PRIMARY];
+    ALTER TABLE dbo.sub1 WITH NOCHECK ADD CONSTRAINT [fk_1]
+    FOREIGN KEY([{PRIMARY_KEY_COL}])
+    REFERENCES {TABLE_NAME} ([{PRIMARY_KEY_COL}]);
+    ALTER TABLE dbo.sub1 CHECK CONSTRAINT [fk_1];""",
+    f"""CREATE TABLE dbo.sub2(
+        [sub2_id] [bigint] IDENTITY(1,1) NOT NULL,
+        [{PRIMARY_KEY_COL}] [bigint] NULL,
+     CONSTRAINT [PK_sub2] PRIMARY KEY CLUSTERED ([sub2_id] ASC)
+    ) ON [PRIMARY];
+    ALTER TABLE dbo.sub2 WITH NOCHECK ADD CONSTRAINT [fk_2]
+    FOREIGN KEY([{PRIMARY_KEY_COL}])
+    REFERENCES {TABLE_NAME} ([{PRIMARY_KEY_COL}]);
+    ALTER TABLE dbo.sub2 CHECK CONSTRAINT [fk_2];"""
+]
+
+DROP_SUB_TABLES_SCRIPTS = ["DROP TABLE dbo.sub1;", "DROP TABLE dbo.sub2;"]
 
 CREATE_TABLE_SCRIPT = f"""
 CREATE TABLE {TABLE_NAME}(
@@ -59,6 +83,7 @@ CREATE DATABASE [{CLEAR_DB_NAME}];"""
 INIT_SCRIPT = f"""
 USE [{WORK_DB_NAME}];
 {CREATE_TABLE_SCRIPT}
+
 USE [{CLEAR_DB_NAME}];
 {CREATE_TABLE_SCRIPT}"""
 
@@ -134,11 +159,21 @@ class TestDbTable(unittest.TestCase):
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_subordinate_tables_single(self):
-        self.assertEqual(self.table.subordinate_tables, False)
+        self.cursor.execute(CREATE_SUB_TABLES_SCRIPTS[0])
+        table = DbTable(LOGGER_DICT_STUB, self.cursor, self.queries, TABLE_NAME,
+                        WORK_DB_NAME, CLEAR_DB_NAME)
+        sub_tables = table.subordinate_tables
+        self.cursor.execute(DROP_SUB_TABLES_SCRIPTS[0])
+        self.assertEqual(sub_tables, tuple([SUB_TABLES[0]]))
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_subordinate_tables_multi(self):
-        self.assertEqual(self.table.subordinate_tables, False)
+        self.cursor.execute("\n".join(CREATE_SUB_TABLES_SCRIPTS))
+        table = DbTable(LOGGER_DICT_STUB, self.cursor, self.queries, TABLE_NAME,
+                        WORK_DB_NAME, CLEAR_DB_NAME)
+        sub_tables = table.subordinate_tables
+        self.cursor.execute("\n".join(DROP_SUB_TABLES_SCRIPTS))
+        self.assertCountEqual(sub_tables, tuple(SUB_TABLES))
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_delete_statement_list_empty(self):
