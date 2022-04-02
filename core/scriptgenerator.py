@@ -5,9 +5,12 @@ import subprocess
 from git import Repo, Remote,  GitError
 from datetime import datetime
 from pyodbc import Cursor
+from typing import Union
 
 from core.dbtable import DbTable
 from core.filewriter import FileWriter
+from core.sqlquerybuilder import SqlQueryBuilder
+from core.sqlservertemplates import SqlServerTemplates
 
 
 class ScriptGenerator:
@@ -58,8 +61,8 @@ class ScriptGenerator:
 
         self.__git_folder_path: str = git_folder_path
         self.__target_folder: str = target_folder
-        self.__repo: Repo = None
-        self.__origin: Remote = None
+        self.__repo: Union[Repo, None] = None
+        self.__origin: Union[Remote, None] = None
         self.__changelog_filepath = None
         self.__init_git_objects()
             
@@ -156,7 +159,7 @@ class ScriptGenerator:
     def __init_git_objects(self) -> None:
         """Sets private attributes to work with Git objects.
 
-        :raise NotADirectoryError: if git repository folder does not exists.
+        :raise NotADirectoryError: if git repository folder does not exist.
         :return: None
         """
 
@@ -179,7 +182,8 @@ class ScriptGenerator:
             with open(changelog_name, "tw", encoding="utf-8") as file:
                 file.write("databaseChangeLog:")
             self.__commit_files([os.path.abspath(changelog_name)],
-                               "new month yml add", is_new_changelog=True)
+                                "new month changelog add",
+                                is_new_changelog=True)
         self.__changelog_filepath = changelog_name
 
     def __get_db_table_list(self, table_list: list[str]) -> list[DbTable]:
@@ -191,8 +195,10 @@ class ScriptGenerator:
         self.__logger.info("run")
         db_table_list = []
         for table_name in table_list:
-            db_table = DbTable(self.__config_dict, self.__cursor, table_name,
-                               self.__work_db_name, self.__clear_db_name)
+            db_table = DbTable(self.__config_dict, self.__cursor,
+                               SqlQueryBuilder(SqlServerTemplates()),
+                               table_name, self.__work_db_name,
+                               self.__clear_db_name)
             db_table_list.append(db_table)
         return db_table_list
 
