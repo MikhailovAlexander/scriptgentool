@@ -17,6 +17,11 @@ class ScriptGenerator:
     """A class for create script files with the SQL statements to migrate work
     database to clear.
 
+    Properties
+    ----------
+    table_names(self) -> list[str]:
+        Returns the names list of database tables.
+
     Methods
     -------
     upsert_tables(self, file_size_limit: int, message: str,
@@ -78,6 +83,14 @@ class ScriptGenerator:
             table_settings["table_list"], query_builder)
         self.__upsert_only_list: list[str] = table_settings["upsert_only_list"]
         self.__delete_only_list: list[str] = table_settings["delete_only_list"]
+
+    @property
+    def table_names(self) -> list[str]:
+        """
+        :return: the names list of database tables.
+        """
+
+        return [table.name for table in self.__db_table_list]
 
     @property
     def __target_folder_path(self) -> str:
