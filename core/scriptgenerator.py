@@ -21,6 +21,10 @@ class ScriptGenerator:
     ----------
     table_names(self) -> list[str]:
         Returns the names list of database tables.
+    changelog_filepath(self):
+        Returns the filepath to the actual changelog file.
+    committed_files(self) -> tuple[str]:
+        Returns a tuple with the path of the committed files, except changelog.
 
     Methods
     -------
@@ -75,6 +79,7 @@ class ScriptGenerator:
         self.__changelog_filepath = None
         self.__init_git_objects()
             
+        self.__committed_files: set[str] = set()
         self.__cursor: Cursor = cursor
         self.__work_db_name: str = work_db_name
         self.__clear_db_name: str = clear_db_name
@@ -91,6 +96,22 @@ class ScriptGenerator:
         """
 
         return [table.name for table in self.__db_table_list]
+
+    @property
+    def changelog_filepath(self) -> str:
+        """
+        :return: the filepath to the actual changelog file.
+        """
+
+        return self.__changelog_filepath
+
+    @property
+    def committed_files(self) -> tuple[str]:
+        """
+        :return: a tuple with the path of the committed files, except changelog.
+        """
+
+        return tuple(self.__committed_files)
 
     @property
     def __target_folder_path(self) -> str:
@@ -140,6 +161,8 @@ class ScriptGenerator:
                                      for file in saver.files])
             self.__update_clear_db()
             self.__commit_files(saver.files, message)
+            self.__committed_files.update([file for file in saver.files
+                                           if file != self.changelog_filepath])
 
     def upload_tables(self, file_size_limit: int, message: str,
                       row_limit: int = None) -> None:
@@ -172,6 +195,8 @@ class ScriptGenerator:
                                  for file in saver.files])
         self.__update_clear_db()
         self.__commit_files(saver.files, message)
+        self.__committed_files.update([file for file in saver.files
+                                       if file != self.changelog_filepath])
 
     def __init_git_objects(self) -> None:
         """Sets private attributes to work with Git objects.

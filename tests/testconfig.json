@@ -1,0 +1,13 @@
+{
+  "dbconnect": {
+    "server":"127.0.0.1",
+    "port": "1433",
+    "init_db_name":"master",
+    "user":"UnitTest",
+    "password":"#UnitTest777UnitTest"
+  },
+  "repository": {
+    "git_folder_path":"/home/alexander/PycharmProjects/test_repo",
+    "target_folder":"Report"
+  }
+}

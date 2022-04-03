@@ -1,14 +1,11 @@
 import pyodbc
-import os
-import json
 
-
-CONNECTION_CONF_FILE_PATH = 'dbconnect.json'
+from testconfigreader import TestConfigReader
 
 
 class DbConnector:
     def __init__(self):
-        self.__config = self.__read_config()
+        self.__config = TestConfigReader().get_config("dbconnect")
         self.__connection = None
         self.__cursor = None
 
@@ -59,15 +56,6 @@ class DbConnector:
             return True
         except Exception:
             return False
-
-    @staticmethod
-    def __read_config():
-        if not os.path.exists(CONNECTION_CONF_FILE_PATH):
-            return None
-        connect_config = None
-        with open(CONNECTION_CONF_FILE_PATH, 'r') as conf_file:
-            connect_config = json.load(conf_file)
-        return connect_config
 
     def __get_con_str(self):
         if not self.__config:
