@@ -10,7 +10,7 @@ from typing import Union
 from core.dbtable import DbTable
 from core.filewriter import FileWriter
 from core.sqlquerybuilder import SqlQueryBuilder
-from core.sqlservertemplates import SqlServerTemplates
+from core.toposorter import TopoSorter
 
 
 class ScriptGenerator:
@@ -39,19 +39,23 @@ class ScriptGenerator:
     """
 
     def __init__(self, config_dict: dict[str: str], cursor: Cursor,
-                 work_db_name: str, clear_db_name: str, git_folder_path: str,
-                 target_folder: str, table_settings: dict[str: str],
+                 query_builder: SqlQueryBuilder, work_db_name: str,
+                 clear_db_name: str, git_folder_path: str, target_folder: str,
+                 table_settings: dict[str: str],
                  liquibase_settings: dict[str: str]):
         """
         :param config_dict: a dictionary with the logger configuration.
         :param cursor: a database cursor for executing SQL queries.
+        :param query_builder: an SqlQueryBuilder object with templates.
         :param work_db_name: the name of the work database.
         :param clear_db_name: the name of the clear database.
-        :param git_folder_path:
-        :param target_folder:
-        :param table_settings:
-        :param liquibase_settings:
+        :param git_folder_path: the path to the git repository folder.
+        :param target_folder: the folder name in the git repository for adding
+        script files.
+        :param table_settings: a dictionary with the database table lists.
+        :param liquibase_settings: a dictionary with the liquibase settings.
         """
+
         self.__config_dict: dict[str: str] = config_dict
         logging.config.dictConfig(config_dict)
         self.__logger: Logger = logging.getLogger(__name__)
@@ -71,7 +75,7 @@ class ScriptGenerator:
         self.__clear_db_name: str = clear_db_name
         self.__liquibase_settings: dict[str: str] = liquibase_settings
         self.__db_table_list:  list[DbTable] = self.__get_db_table_list(
-            table_settings["table_list"])
+            table_settings["table_list"], query_builder)
         self.__upsert_only_list: list[str] = table_settings["upsert_only_list"]
         self.__delete_only_list: list[str] = table_settings["delete_only_list"]
 
@@ -186,21 +190,29 @@ class ScriptGenerator:
                                 is_new_changelog=True)
         self.__changelog_filepath = changelog_name
 
-    def __get_db_table_list(self, table_list: list[str]) -> list[DbTable]:
+    def __get_db_table_list(self, table_list: list[str],
+                            query_builder: SqlQueryBuilder) -> list[DbTable]:
         """Creates the list of the DbTable objects.
 
         :param table_list: the list of the table names.
+        :param query_builder: an SqlQueryBuilder object with templates.
         :return: the list of the DbTable objects.
         """
         self.__logger.info("run")
-        db_table_list = []
-        for table_name in table_list:
-            db_table = DbTable(self.__config_dict, self.__cursor,
-                               SqlQueryBuilder(SqlServerTemplates()),
+        table_names = [name.lower() for name in table_list]
+        db_table_dict = {}
+        topo_sorter = TopoSorter(table_list)
+        for table_name in table_names:
+            db_table = DbTable(self.__config_dict, self.__cursor, query_builder,
                                table_name, self.__work_db_name,
                                self.__clear_db_name)
-            db_table_list.append(db_table)
-        return db_table_list
+            db_table_dict[table_name] = db_table
+            for sub_table in [name.lower() for name
+                              in db_table.subordinate_tables]:
+                if sub_table in table_names:
+                    topo_sorter.add_edge(tuple((table_name, sub_table)))
+        return [db_table_dict[table]
+                for table in topo_sorter.topo_sorted_vertices]
 
     def __git_pull_push_repeat(self, pull_repeat: bool = False,
                                push_repeat: bool = False) -> None:
