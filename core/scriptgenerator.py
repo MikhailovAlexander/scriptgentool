@@ -79,7 +79,7 @@ class ScriptGenerator:
         self.__changelog_filepath = None
         self.__init_git_objects()
             
-        self.__committed_files: set[str] = set()
+        self.__committed_files: list[str] = []
         self.__cursor: Cursor = cursor
         self.__work_db_name: str = work_db_name
         self.__clear_db_name: str = clear_db_name
@@ -161,8 +161,9 @@ class ScriptGenerator:
                                      for file in saver.files])
             self.__update_clear_db()
             self.__commit_files(saver.files, message)
-            self.__committed_files.update([file for file in saver.files
-                                           if file != self.changelog_filepath])
+            self.__committed_files += [file for file in saver.files
+                                       if file != self.changelog_filepath
+                                       and file not in self.__committed_files]
 
     def upload_tables(self, file_size_limit: int, message: str,
                       row_limit: int = None) -> None:
@@ -195,8 +196,9 @@ class ScriptGenerator:
                                  for file in saver.files])
         self.__update_clear_db()
         self.__commit_files(saver.files, message)
-        self.__committed_files.update([file for file in saver.files
-                                       if file != self.changelog_filepath])
+        self.__committed_files += [file for file in saver.files
+                                   if file != self.changelog_filepath
+                                   and file not in self.__committed_files]
 
     def __init_git_objects(self) -> None:
         """Sets private attributes to work with Git objects.
