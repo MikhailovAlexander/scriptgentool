@@ -194,9 +194,9 @@ class TestDbTable(unittest.TestCase):
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_upsert_statement_list_multi_rows(self):
-        values = f"(123456787,123,1.23,'test',null)" + ',\n'+' ' * 8 +\
+        values = "(123456787,123,1.23,'test',null)" + ',\n'+' ' * 8 +\
                  "(123456788,null,1.23,'''quoted''',null)" + ',\n'+' ' * 8 +\
-                 f"(123456789,123,null,'test',null)"
+                 "(123456789,123,null,'test',null)"
         self.__insert_data(WORK_DB_NAME, values)
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,

@@ -56,6 +56,12 @@ class TestScriptGenerator(unittest.TestCase):
             self.cursor.execute(DELETE_TABLES_SCRIPT)
         self.repo.git.reset('--hard', self.start_commit)
         self.repo.git.push('--force')
+        self.script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
+                                          self.queries, WORK_DB_NAME,
+                                          CLEAR_DB_NAME, self.git_folder_path,
+                                          self.target_folder,
+                                          self.table_settings,
+                                          self.liquibase_settings_skip)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test__init__(self):
@@ -89,72 +95,52 @@ class TestScriptGenerator(unittest.TestCase):
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upsert_tables_empty(self):
-        script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
-                                     self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
-                                     self.git_folder_path, self.target_folder,
-                                     self.table_settings,
-                                     self.liquibase_settings_skip)
-        script_gen.upsert_tables(1, "")
-        self.assertEqual(script_gen.committed_files, tuple())
+        self.script_gen.upsert_tables(1, "")
+        self.assertEqual(self.script_gen.committed_files, tuple())
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upsert_tables_delete_statement_single(self):
-        script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
-                                     self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
-                                     self.git_folder_path, self.target_folder,
-                                     self.table_settings,
-                                     self.liquibase_settings_skip)
         values = f"(1,1,1.1,'test','{DT_STR}')"
         ins_query = INSERT_SCRIPT_TEMPLATE.format(CLEAR_DB_NAME, TABLE_NAME,
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
-        script_gen.upsert_tables(10000, "")
+        self.script_gen.upsert_tables(10000, "")
         liquibase_string = self.liquibase_settings_skip["liquibase_string"]
         str_id_list = "1"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
                                                            str_id_list)
         file_text = ""
-        with open(script_gen.committed_files[0], 'r') as file:
+        with open(self.script_gen.committed_files[0], 'r') as file:
             file_text = file.read()
         self.assertEqual(file_text, "".join([liquibase_string, statement]))
-        self.assertEqual(len(script_gen.committed_files), 1)
+        self.assertEqual(len(self.script_gen.committed_files), 1)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upsert_tables_delete_statement_multi(self):
-        script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
-                                     self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
-                                     self.git_folder_path, self.target_folder,
-                                     self.table_settings,
-                                     self.liquibase_settings_skip)
         values = "(1,1,1.1,'',null),(2,1,1.1,'',null),(3,1,1.1,'',null)"
         ins_query = INSERT_SCRIPT_TEMPLATE.format(CLEAR_DB_NAME, TABLE_NAME,
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
-        script_gen.upsert_tables(10000, "")
+        self.script_gen.upsert_tables(10000, "")
         liquibase_string = self.liquibase_settings_skip["liquibase_string"]
         str_id_list = "1,2,3"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
                                                            str_id_list)
         file_text = ""
-        with open(script_gen.committed_files[0], 'r') as file:
+        with open(self.script_gen.committed_files[0], 'r') as file:
             file_text = file.read()
         self.assertEqual(file_text, "".join([liquibase_string, statement]))
-        self.assertEqual(len(script_gen.committed_files), 1)
+        self.assertEqual(len(self.script_gen.committed_files), 1)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upsert_tables_delete_statement_row_limit(self):
-        script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
-                                     self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
-                                     self.git_folder_path, self.target_folder,
-                                     self.table_settings,
-                                     self.liquibase_settings_skip)
         values = "(1,1,1.1,'',null),(2,1,1.1,'',null),(3,1,1.1,'',null)"
         ins_query = INSERT_SCRIPT_TEMPLATE.format(CLEAR_DB_NAME, TABLE_NAME,
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
-        script_gen.upsert_tables(10000, "", row_limit=1)
+        self.script_gen.upsert_tables(10000, "", row_limit=1)
         liquibase_string = self.liquibase_settings_skip["liquibase_string"]
         str_id_list = ["1", "2", "3"]
         statements = [
@@ -163,25 +149,20 @@ class TestScriptGenerator(unittest.TestCase):
             for num in str_id_list
         ]
         file_text = ""
-        with open(script_gen.committed_files[0], 'r') as file:
+        with open(self.script_gen.committed_files[0], 'r') as file:
             file_text = file.read()
         self.assertEqual(file_text, "".join([liquibase_string] + statements))
-        self.assertEqual(len(script_gen.committed_files), 1)
+        self.assertEqual(len(self.script_gen.committed_files), 1)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upsert_tables_delete_statement_multi_tables(self):
-        script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
-                                     self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
-                                     self.git_folder_path, self.target_folder,
-                                     self.table_settings,
-                                     self.liquibase_settings_skip)
-        tables = script_gen.table_names
+        tables = self.script_gen.table_names
         values = ["(1,1,1.1,'',null)", "(1,1,1.1,'',null)", "(1,1,1.1,'',null)"]
         for table, value in zip(tables, values):
             ins_query = INSERT_SCRIPT_TEMPLATE.format(CLEAR_DB_NAME, table,
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
-        script_gen.upsert_tables(10000, "")
+        self.script_gen.upsert_tables(10000, "")
         liquibase_string = self.liquibase_settings_skip["liquibase_string"]
         str_id_list = ["1", "1", "1"]
         tables.reverse()
@@ -190,10 +171,10 @@ class TestScriptGenerator(unittest.TestCase):
             for num, table in zip(str_id_list, TABLES)
         ]
         file_text = ""
-        with open(script_gen.committed_files[0], 'r') as file:
+        with open(self.script_gen.committed_files[0], 'r') as file:
             file_text = file.read()
         self.assertEqual(file_text, "".join([liquibase_string] + statements))
-        self.assertEqual(len(script_gen.committed_files), 1)
+        self.assertEqual(len(self.script_gen.committed_files), 1)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upsert_tables_delete_statement_upsert_only_list(self):
@@ -226,18 +207,13 @@ class TestScriptGenerator(unittest.TestCase):
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upsert_tables_delete_file_size_and_changelog(self):
-        script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
-                                     self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
-                                     self.git_folder_path, self.target_folder,
-                                     self.table_settings,
-                                     self.liquibase_settings_skip)
-        tables = script_gen.table_names
+        tables = self.script_gen.table_names
         values = ["(1,1,1.1,'',null)", "(1,1,1.1,'',null)", "(1,1,1.1,'',null)"]
         for table, value in zip(tables, values):
             ins_query = INSERT_SCRIPT_TEMPLATE.format(CLEAR_DB_NAME, table,
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
-        script_gen.upsert_tables(50, "")
+        self.script_gen.upsert_tables(50, "")
         liquibase_string = self.liquibase_settings_skip["liquibase_string"]
         str_id_list = ["1", "1", "1"]
         tables.reverse()
@@ -246,18 +222,168 @@ class TestScriptGenerator(unittest.TestCase):
             self.templates.delete_statement.format(table, PRIMARY_KEY_COL, num)
             for num, table in zip(str_id_list, tables)
         ]
-        self.assertEqual(len(script_gen.committed_files), 3)
+        self.assertEqual(len(self.script_gen.committed_files), 3)
         file_texts = []
         include_str = ("\n - include: "
                        '{{ file: "{0}", relativeToChangelogFile: "true" }}')
         changelog_text = "databaseChangeLog:"
-        for file in script_gen.committed_files:
+        for file in self.script_gen.committed_files:
             with open(file, 'r') as f:
                 file_texts.append(f.read())
             changelog_text += include_str.format(os.path.basename(file))
         self.assertEqual(file_texts, statements)
-        with open(script_gen.changelog_filepath, 'r') as f:
+        with open(self.script_gen.changelog_filepath, 'r') as f:
             self.assertEqual(f.read(), changelog_text)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_upsert_statement_single(self):
+        values = f"(1,1,1.1,'test','{DT_STR}')"
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, values)
+        self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, "")
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string, statement]))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_upsert_statement_multi(self):
+        values = (',\n'+' ' * 8).join(["(1,123,1.23,'test',null)",
+                                       "(2,null,1.23,'''quoted''',null)",
+                                       "(3,123,null,'test',null)"])
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, values)
+        self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, "")
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string, statement]))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_upsert_statement_row_limit(self):
+        values = ["(1,123,1.23,'test',null)", "(2,null,1.23,'''quoted''',null)"]
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, "", row_limit=1)
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statements = [self.templates.upsert_statement.format(TABLE_NAME,
+                                                             STR_COLUMNS,
+                                                             value,
+                                                             PRIMARY_KEY_COL,
+                                                             LINK_COLUMNS,
+                                                             INS_COLUMNS)
+                      for value in values]
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string] + statements))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_upsert_statement_multi_tables(self):
+        values = ["(1,1,1.1,'',null)", "(1,1,1.1,'',null)", "(1,1,1.1,'',null)"]
+        for table, value in zip(self.script_gen.table_names, values):
+            ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, table,
+                                                      STR_COLUMNS, value)
+            self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, "")
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statements = [self.templates.upsert_statement.format(table,
+                                                             STR_COLUMNS,
+                                                             value,
+                                                             PRIMARY_KEY_COL,
+                                                             LINK_COLUMNS,
+                                                             INS_COLUMNS)
+                      for table, value
+                      in zip(self.script_gen.table_names, values)]
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string] + statements))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_upsert_statement_days_before_empty(self):
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  "(2,1,1.2,'b','1999-03-30 23:19:14.777')"]
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, "", days_before=1)
+        self.assertEqual(self.script_gen.committed_files, tuple())
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_upsert_statement_days_before_single(self):
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  f"(2,1,1.2,'b','{DT_STR}')"]
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, "", days_before=1)
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statements = [self.templates.upsert_statement.format(TABLE_NAME,
+                                                             STR_COLUMNS,
+                                                             value,
+                                                             PRIMARY_KEY_COL,
+                                                             LINK_COLUMNS,
+                                                             INS_COLUMNS)
+                      for value in values[1:]]
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string] + statements))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_upsert_statement_days_before_multi(self):
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  f"(2,1,1.2,'b','{DT_STR}')", f"(3,1,1.2,'b','{DT_STR}')"]
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, "", days_before=1)
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        str_values = (',\n'+' ' * 8).join(values[1:])
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           str_values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string, statement]))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_tables_commit_message(self):
+        values = f"(1,1,1.1,'test',null)"
+        commit_message = "test commit message"
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(CLEAR_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, values)
+        self.cursor.execute(ins_query)
+        self.script_gen.upsert_tables(10000, commit_message)
+        self.assertEqual(self.repo.head.commit.message, commit_message)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_upload_tables_empty(self):
