@@ -395,6 +395,142 @@ class TestScriptGenerator(unittest.TestCase):
         script_gen.upload_tables(1, "")
         self.assertEqual(script_gen.committed_files, tuple())
 
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upload_tables_single(self):
+        values = f"(1,1,1.1,'test','{DT_STR}')"
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, values)
+        self.cursor.execute(ins_query)
+        self.script_gen.upload_tables(10000, "")
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string, statement]))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upload_tables_multi(self):
+        values = (',\n'+' ' * 8).join(["(1,123,1.23,'test',null)",
+                                       "(2,null,1.23,'''quoted''',null)",
+                                       "(3,123,null,'test',null)"])
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, values)
+        self.cursor.execute(ins_query)
+        self.script_gen.upload_tables(10000, "")
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string, statement]))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upload_tables_row_limit(self):
+        values = ["(1,123,1.23,'test',null)", "(2,null,1.23,'''quoted''',null)"]
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        self.script_gen.upload_tables(10000, "", row_limit=1)
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statements = [self.templates.upsert_statement.format(TABLE_NAME,
+                                                             STR_COLUMNS,
+                                                             value,
+                                                             PRIMARY_KEY_COL,
+                                                             LINK_COLUMNS,
+                                                             INS_COLUMNS)
+                      for value in values]
+        file_text = ""
+        with open(self.script_gen.committed_files[0], 'r') as file:
+            file_text = file.read()
+        self.assertEqual(file_text, "".join([liquibase_string] + statements))
+        self.assertEqual(len(self.script_gen.committed_files), 1)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upload_tables_multi_tables(self):
+        values = ["(1,1,1.1,'',null)", "(1,1,1.1,'',null)", "(1,1,1.1,'',null)"]
+        for table, value in zip(self.script_gen.table_names, values):
+            ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, table,
+                                                      STR_COLUMNS, value)
+            self.cursor.execute(ins_query)
+        self.script_gen.upload_tables(10000, "")
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statements = [liquibase_string +
+                      self.templates.upsert_statement.format(table,
+                                                             STR_COLUMNS,
+                                                             value,
+                                                             PRIMARY_KEY_COL,
+                                                             LINK_COLUMNS,
+                                                             INS_COLUMNS)
+                      for table, value
+                      in zip(self.script_gen.table_names, values)]
+        file_texts = []
+        for file in self.script_gen.committed_files:
+            with open(file, 'r') as f:
+                file_texts.append(f.read())
+        self.assertEqual(file_texts, statements)
+        self.assertEqual(len(self.script_gen.committed_files), 3)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upload_tables_file_size(self):
+        values = ["(1,123,1.23,'test',null)", "(2,null,1.23,'''quoted''',null)"]
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        self.script_gen.upload_tables(50, "", row_limit=1)
+        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        statements = [liquibase_string +
+                      self.templates.upsert_statement.format(TABLE_NAME,
+                                                             STR_COLUMNS,
+                                                             value,
+                                                             PRIMARY_KEY_COL,
+                                                             LINK_COLUMNS,
+                                                             INS_COLUMNS)
+                      for value in values]
+        file_texts = []
+        for file in self.script_gen.committed_files:
+            with open(file, 'r') as f:
+                file_texts.append(f.read())
+        self.assertEqual(file_texts, statements)
+        self.assertEqual(len(self.script_gen.committed_files), 2)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upload_tables_commit_message(self):
+        values = f"(1,1,1.1,'test',null)"
+        commit_message = "test commit message"
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, values)
+        self.cursor.execute(ins_query)
+        self.script_gen.upload_tables(10000, commit_message)
+        self.assertEqual(self.repo.head.commit.message, commit_message)
+
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upload_tables__changelog(self):
+        values = f"(1,1,1.1,'test',null)"
+        commit_message = "test commit message"
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, values)
+        self.cursor.execute(ins_query)
+        self.script_gen.upload_tables(10000, "")
+        file_name = os.path.basename(self.script_gen.committed_files[0])
+        changelog_text = ("databaseChangeLog:\n - include: "
+                          f'{{ file: "{file_name}", '
+                          f'relativeToChangelogFile: "true" }}')
+        with open(self.script_gen.changelog_filepath, 'r') as f:
+            self.assertEqual(f.read(), changelog_text)
+
 
 if __name__ == '__main__':
     unittest.main()
