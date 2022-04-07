@@ -13,6 +13,10 @@ from dbconstatnts import DbConnector, LOGGER_DICT_STUB, IS_CONNECTED, \
     CREATE_DB_SCRIPT, INIT_TABLES_SCRIPT, DELETE_TABLES_SCRIPT, DROP_SCRIPT,\
     INSERT_SCRIPT_TEMPLATE
 
+LIQUIBASE_SKIP = {"skip_update": True, "liquibase_path": "",
+                  "liquibase_properties_path": "", "liquibase_log_path": "",
+                  "liquibase_string": "test\n"}
+
 
 class TestScriptGenerator(unittest.TestCase):
     config = TestConfigReader()
@@ -25,10 +29,11 @@ class TestScriptGenerator(unittest.TestCase):
     start_commit = repo.head.commit
     connector = None
     cursor = None
-    liquibase_settings_skip = {"skip_update": True, "liquibase_path": "",
-                               "liquibase_properties_path": "",
-                               "liquibase_log_path": "",
-                               "liquibase_string": "test\n"}
+    liquibase_settings = (config.get_config("liquibase_settings")
+                          if config.get_config("liquibase_settings")
+                             and not config.get_config("liquibase_settings")
+                                ["skip_update"]
+                          else LIQUIBASE_SKIP)
     table_settings = {"table_list": TABLES, "upsert_only_list": [],
                       "delete_only_list": []}
 
@@ -59,7 +64,7 @@ class TestScriptGenerator(unittest.TestCase):
                                           CLEAR_DB_NAME, self.git_folder_path,
                                           self.target_folder,
                                           self.table_settings,
-                                          self.liquibase_settings_skip)
+                                          self.liquibase_settings)
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test__init__(self):
@@ -69,7 +74,7 @@ class TestScriptGenerator(unittest.TestCase):
                                      self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
                                      self.git_folder_path, self.target_folder,
                                      table_settings,
-                                     self.liquibase_settings_skip)
+                                     self.liquibase_settings)
         changelog_name = datetime.now().strftime("changelog_tree%Y%m.yml")
         changelog_path = "/".join([self.git_folder_path, self.target_folder,
                                    changelog_name])
@@ -87,7 +92,7 @@ class TestScriptGenerator(unittest.TestCase):
                                      self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
                                      self.git_folder_path, self.target_folder,
                                      table_settings,
-                                     self.liquibase_settings_skip)
+                                     self.liquibase_settings)
         table_list.reverse()
         self.assertEqual(script_gen.table_names, table_list)
 
@@ -103,7 +108,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         str_id_list = "1"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
@@ -121,7 +126,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         str_id_list = "1,2,3"
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
@@ -139,7 +144,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "", row_limit=1)
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         str_id_list = ["1", "2", "3"]
         statements = [
             self.templates.delete_statement.format(TABLE_NAME, PRIMARY_KEY_COL,
@@ -161,7 +166,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         str_id_list = ["1", "1", "1"]
         tables.reverse()
         statements = [
@@ -178,13 +183,13 @@ class TestScriptGenerator(unittest.TestCase):
     def test_upsert_tables_delete_statement_upsert_only_list(self):
         table_settings = {"table_list": [TABLE_NAME, TABLE_NAME_2,
                                          TABLE_NAME_3],
-                          "upsert_only_list": [TABLE_NAME_2, TABLE_NAME_3],
+                          "upsert_only_list": [TABLE_NAME, TABLE_NAME_2],
                           "delete_only_list": []}
         script_gen = ScriptGenerator(LOGGER_DICT_STUB, self.cursor,
                                      self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
                                      self.git_folder_path, self.target_folder,
                                      table_settings,
-                                     self.liquibase_settings_skip)
+                                     self.liquibase_settings)
         tables = script_gen.table_names
         values = ["(1,1,1.1,'',null)", "(1,1,1.1,'',null)", "(1,1,1.1,'',null)"]
         for table, value in zip(tables, values):
@@ -192,9 +197,9 @@ class TestScriptGenerator(unittest.TestCase):
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
         script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         str_id = "1"
-        statement = self.templates.delete_statement.format(TABLE_NAME,
+        statement = self.templates.delete_statement.format(TABLE_NAME_3,
                                                            PRIMARY_KEY_COL,
                                                            str_id)
         file_text = ""
@@ -212,7 +217,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(50, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         str_id_list = ["1", "1", "1"]
         tables.reverse()
         statements = [
@@ -240,7 +245,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
                                                            values,
@@ -262,7 +267,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
                                                            values,
@@ -282,7 +287,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, ",".join(values))
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "", row_limit=1)
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statements = [self.templates.upsert_statement.format(TABLE_NAME,
                                                              STR_COLUMNS,
                                                              value,
@@ -304,7 +309,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statements = [self.templates.upsert_statement.format(table,
                                                              STR_COLUMNS,
                                                              value,
@@ -329,14 +334,14 @@ class TestScriptGenerator(unittest.TestCase):
                                      self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
                                      self.git_folder_path, self.target_folder,
                                      table_settings,
-                                     self.liquibase_settings_skip)
+                                     self.liquibase_settings)
         values = ["(1,1,1.1,'',null)", "(1,1,1.1,'',null)", "(1,1,1.1,'',null)"]
         for table, value in zip(self.script_gen.table_names, values):
             ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, table,
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
         script_gen.upsert_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
                                                            values[0],
@@ -367,7 +372,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, ",".join(values))
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "", days_before=1)
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statements = [self.templates.upsert_statement.format(TABLE_NAME,
                                                              STR_COLUMNS,
                                                              value,
@@ -389,7 +394,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, ",".join(values))
         self.cursor.execute(ins_query)
         self.script_gen.upsert_tables(10000, "", days_before=1)
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         str_values = (',\n'+' ' * 8).join(values[1:])
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
@@ -419,7 +424,7 @@ class TestScriptGenerator(unittest.TestCase):
                                      self.queries, WORK_DB_NAME, CLEAR_DB_NAME,
                                      self.git_folder_path, self.target_folder,
                                      self.table_settings,
-                                     self.liquibase_settings_skip)
+                                     self.liquibase_settings)
         script_gen.upload_tables(1, "")
         self.assertEqual(script_gen.committed_files, tuple())
 
@@ -430,7 +435,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
         self.script_gen.upload_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
                                                            values,
@@ -452,7 +457,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, values)
         self.cursor.execute(ins_query)
         self.script_gen.upload_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statement = self.templates.upsert_statement.format(TABLE_NAME,
                                                            STR_COLUMNS,
                                                            values,
@@ -472,7 +477,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, ",".join(values))
         self.cursor.execute(ins_query)
         self.script_gen.upload_tables(10000, "", row_limit=1)
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statements = [self.templates.upsert_statement.format(TABLE_NAME,
                                                              STR_COLUMNS,
                                                              value,
@@ -494,7 +499,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                       STR_COLUMNS, value)
             self.cursor.execute(ins_query)
         self.script_gen.upload_tables(10000, "")
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statements = [liquibase_string +
                       self.templates.upsert_statement.format(table,
                                                              STR_COLUMNS,
@@ -518,7 +523,7 @@ class TestScriptGenerator(unittest.TestCase):
                                                   STR_COLUMNS, ",".join(values))
         self.cursor.execute(ins_query)
         self.script_gen.upload_tables(50, "", row_limit=1)
-        liquibase_string = self.liquibase_settings_skip["liquibase_string"]
+        liquibase_string = self.liquibase_settings["liquibase_string"]
         statements = [liquibase_string +
                       self.templates.upsert_statement.format(TABLE_NAME,
                                                              STR_COLUMNS,

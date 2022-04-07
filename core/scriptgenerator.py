@@ -192,13 +192,14 @@ class ScriptGenerator:
                                                          all_rows=True)
             saver.save_scripts(scripts, db_table.name.replace('.', '_'),
                                into_new_file=True)
-        self.__update_changelog([os.path.basename(file)
-                                 for file in saver.files])
-        self.__update_clear_db()
-        self.__commit_files(saver.files, message)
-        self.__committed_files += [file for file in saver.files
-                                   if file != self.changelog_filepath
-                                   and file not in self.__committed_files]
+        if saver.files:
+            self.__update_changelog([os.path.basename(file)
+                                     for file in saver.files])
+            self.__update_clear_db()
+            self.__commit_files(saver.files, message)
+            self.__committed_files += [file for file in saver.files
+                                       if file != self.changelog_filepath
+                                       and file not in self.__committed_files]
 
     def __init_git_objects(self) -> None:
         """Sets private attributes to work with Git objects.
@@ -319,7 +320,7 @@ class ScriptGenerator:
             self.__logger.warning("Clear db updating is skipped")
             return
         self.__logger.info("Clear db updating run")
-        cmd = "call {0} --defaultsFile={1} --logFile={2} " \
+        cmd = "{0} --defaultsFile={1} --logFile={2} " \
               "--changeLogFile={3} update"
         log = self.__liquibase_settings["liquibase_log_path"]
         cmd = cmd.format(self.__liquibase_settings["liquibase_path"],

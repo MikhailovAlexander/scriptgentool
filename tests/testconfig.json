@@ -9,5 +9,12 @@
   "repository": {
     "git_folder_path":"/home/alexander/PycharmProjects/test_repo",
     "target_folder":"Report"
+  },
+  "liquibase_settings": {
+    "skip_update": false,
+    "liquibase_path":"/opt/liquibase/liquibase",
+    "liquibase_properties_path": "/home/alexander/PycharmProjects/scriptgentool/tests/liquibase.properties",
+    "liquibase_log_path": "/home/alexander/PycharmProjects/scriptgentool/tests/scriptgen.log",
+    "liquibase_string": "--liquibase formatted sql\n--changeset author:scriptgenerator stripComments:false dbms:mssql endDelimiter:GO\n"
   }
 }
