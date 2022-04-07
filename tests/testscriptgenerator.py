@@ -14,8 +14,7 @@ from dbconstatnts import DbConnector, LOGGER_DICT_STUB, IS_CONNECTED, \
     INSERT_SCRIPT_TEMPLATE
 
 LIQUIBASE_SKIP = {"skip_update": True, "liquibase_path": "",
-                  "liquibase_properties_path": "", "liquibase_log_path": "",
-                  "liquibase_string": "test\n"}
+                  "liquibase_properties_path": "", "liquibase_string": "test\n"}
 
 
 class TestScriptGenerator(unittest.TestCase):

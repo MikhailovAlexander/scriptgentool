@@ -320,12 +320,9 @@ class ScriptGenerator:
             self.__logger.warning("Clear db updating is skipped")
             return
         self.__logger.info("Clear db updating run")
-        cmd = "{0} --defaultsFile={1} --logFile={2} " \
-              "--changeLogFile={3} update"
-        log = self.__liquibase_settings["liquibase_log_path"]
+        cmd = "{0} --defaultsFile={1} --changeLogFile={2} update"
         cmd = cmd.format(self.__liquibase_settings["liquibase_path"],
                          self.__liquibase_settings["liquibase_properties_path"],
-                         log,
                          self.__target_folder + "/"
                          + os.path.basename(self.__changelog_filepath))
         try:
@@ -337,7 +334,7 @@ class ScriptGenerator:
         except Exception as ex:
             self.__logger.error(ex)
             raise RuntimeError("Update clear db failed! see the information "
-                               f"in the liquibase log: {log}")
+                               "in the liquibase log")
 
     def __commit_files(self, files: list[str], message: str,
                        is_new_changelog: bool = False) -> None:
