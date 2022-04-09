@@ -21,12 +21,13 @@ def parse_args(script_config: dict[str: Any]) -> argparse.Namespace:
     :return: a Namespace object with arguments values.
     """
 
+    all_rows = script_config["all_rows"]
     days_before = script_config["days_before"]
     row_limit = script_config["row_limit"]
     file_size_limit = script_config["file_size_limit"]
     parser = argparse.ArgumentParser(description="A tool for generate scripts "
                                                  "with the database changes")
-    parser.add_argument("-a", "--all", action="store_true",
+    parser.add_argument("-a", "--all", action="store_true", default=all_rows,
                         help="All data upload")
     parser.add_argument("-d", "--days", type=int, default=days_before,
                         help=f"Days to search changes, default {days_before}")

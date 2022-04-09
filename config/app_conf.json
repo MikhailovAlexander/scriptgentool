@@ -14,6 +14,7 @@
       "delete_only_list":[]
    },
    "script_settings":{
+      "all_rows":false,
       "days_before":14,
       "row_limit":500,
       "file_size_limit":10000000,

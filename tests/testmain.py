@@ -452,6 +452,38 @@ class TestMain(unittest.TestCase):
                     outer_app_config=config, outer_cursor=self.cursor)
         self.assertEqual(self.repo.head.commit.message, commit_message)
 
+    @unittest.skipIf(not IS_CONNECTED, "Is not connected")
+    def test_upsert_statement_upload_all_rows(self):
+        config = copy.deepcopy(self.config)
+        config["script_settings"]["all_rows"] = True
+        values = ["(1,1,1.2,'a','1999-03-30 23:19:14.777')",
+                  f"(2,1,1.2,'b','{DT_STR}')", f"(3,1,1.2,'b','{DT_STR}')"]
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(WORK_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        ins_query = INSERT_SCRIPT_TEMPLATE.format(CLEAR_DB_NAME, TABLE_NAME,
+                                                  STR_COLUMNS, ",".join(values))
+        self.cursor.execute(ins_query)
+        tested_main(outer_log_config=LOGGER_DICT_STUB,
+                    outer_app_config=config, outer_cursor=self.cursor)
+        liquibase_string = self.config["liquibase_settings"]["liquibase_string"]
+        str_values = (',\n'+' ' * 8).join(values)
+        statement = self.templates.upsert_statement.format(TABLE_NAME,
+                                                           STR_COLUMNS,
+                                                           str_values,
+                                                           PRIMARY_KEY_COL,
+                                                           LINK_COLUMNS,
+                                                           INS_COLUMNS)
+        changelog_text = ""
+        self.assertTrue(os.path.exists(self.changelog_path))
+        with open(self.changelog_path, 'r') as file:
+            changelog_text = file.read()
+        files = extract_files(changelog_text)
+        self.assertEqual(len(files), 1)
+        with open(self.target_folder_path + "/" + files[0], 'r') as file:
+            self.assertEqual(file.read(),
+                             "".join([liquibase_string, statement]))
+
 
 if __name__ == '__main__':
     unittest.main()
