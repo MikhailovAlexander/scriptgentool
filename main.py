@@ -65,10 +65,23 @@ def check_table_settings(table_settings: dict[str: Any]) -> None:
                             "which is include in the upsert_only_list")
 
 
-def main():
-    log_config = None
-    with open(LOG_CONF_FILE_PATH, 'r') as conf_file:
-        log_config = json.load(conf_file)
+def main(outer_log_config: dict[str: Any] = None,
+         outer_app_config: dict[str: Any] = None, outer_cursor=None) -> None:
+    """The main function to generate changeset and changelog files and apply it
+    on the clear database.
+
+    :param outer_log_config: a dictionary with the logger settings, uses for the
+    unit tests.
+    :param outer_app_config: a dictionary with the app settings, uses for the
+    unit tests.
+    :param outer_cursor: database cursor, uses for the unit tests.
+    :return: None
+    """
+
+    log_config = outer_log_config
+    if not log_config:
+        with open(LOG_CONF_FILE_PATH, 'r') as conf_file:
+            log_config = json.load(conf_file)
     file_path = None
     try:
         file_path = log_config["handlers"]["file_handler"]["filename"]
@@ -85,13 +98,17 @@ def main():
     cursor = None
 
     try:
-        app_config = None
-        with open(APP_CONF_FILE_PATH, 'r') as conf_file:
-            app_config = json.load(conf_file)
+        app_config = outer_app_config
+        if not app_config:
+            with open(APP_CONF_FILE_PATH, 'r') as conf_file:
+                app_config = json.load(conf_file)
         table_settings = app_config["table_settings"]
         check_table_settings(table_settings)
-        connection = pyodbc.connect(app_config["connection"]["conn_string"])
-        cursor = connection.cursor()
+        if outer_cursor:
+            cursor = outer_cursor
+        else:
+            connection = pyodbc.connect(app_config["connection"]["conn_string"])
+            cursor = connection.cursor()
         query_builder = SqlQueryBuilder(SqlServerTemplates())
         generator = ScriptGenerator(log_config, cursor, query_builder,
                                     app_config["connection"]["work_db_name"],
@@ -111,11 +128,12 @@ def main():
         logger.exception(ex)
         exit(1)
     finally:
-        if cursor:
+        if cursor and not outer_cursor:
             cursor.close()
         if connection:
             connection.close()
         logger.info('Connection close')
 
 
-main()
+if __name__ == '__main__':
+    main()

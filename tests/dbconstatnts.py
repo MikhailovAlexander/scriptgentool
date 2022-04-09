@@ -19,6 +19,23 @@ LOGGER_DICT_STUB = {
         }
     }
 }
+LOGGER_DICT_WARN = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {
+        "default": {
+            "level": "CRITICAL",
+            "class": "logging.StreamHandler"
+        }
+    },
+    "loggers": {
+        "": {
+            "handlers": ["default"],
+            "level": "WARN",
+            "propagate": True
+        }
+    }
+}
 IS_CONNECTED = DbConnector().check_and_close_connection()
 WORK_DB_NAME = "UnitTest_DbTable_Work"
 CLEAR_DB_NAME = "UnitTest_DbTable_Clear"

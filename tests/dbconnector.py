@@ -5,7 +5,7 @@ from testconfigreader import TestConfigReader
 
 class DbConnector:
     def __init__(self):
-        self.__config = TestConfigReader().get_config("dbconnect")
+        self.__config = TestConfigReader().get_config("connection")
         self.__connection = None
         self.__cursor = None
 
@@ -18,7 +18,7 @@ class DbConnector:
         if self.__connection:
             self.__cursor = self.__connection.cursor()
             return self.__cursor
-        self.__connection = pyodbc.connect(self.__get_con_str(),
+        self.__connection = pyodbc.connect(self.__config["conn_string"],
                                            autocommit=True)
         self.__cursor = self.__connection.cursor()
         return self.__cursor
@@ -47,24 +47,9 @@ class DbConnector:
                 return True
             except Exception:
                 return False
-        con_str = self.__get_con_str()
-        if not con_str:
-            return False
         try:
-            self.__connection = pyodbc.connect(con_str)
+            self.__connection = pyodbc.connect(self.__config["conn_string"])
             self.__cursor = self.__connection.cursor()
             return True
         except Exception:
             return False
-
-    def __get_con_str(self):
-        if not self.__config:
-            return None
-        db_serv = self.__config["server"]
-        db_port = self.__config["port"]
-        init_db_name = self.__config["init_db_name"]
-        db_user = self.__config["user"]
-        db_pass = self.__config["password"]
-        return 'DRIVER={ODBC Driver 18 for SQL Server};SERVER=' + db_serv +\
-               ';PORT=' + db_port + ';DATABASE=' + init_db_name + ';UID=' + \
-               db_user + ';PWD=' + db_pass + ';TrustServerCertificate=Yes'

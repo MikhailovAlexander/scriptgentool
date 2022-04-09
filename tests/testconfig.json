@@ -1,15 +1,25 @@
 {
-  "dbconnect": {
-    "server":"127.0.0.1",
-    "port": "1433",
-    "init_db_name":"master",
-    "user":"UnitTest",
-    "password":"#UnitTest777UnitTest"
-  },
+  "connection":{
+      "clear_db_name":"UnitTest_DbTable_Clear",
+      "work_db_name":"UnitTest_DbTable_Work",
+      "conn_string":"DRIVER={ODBC Driver 18 for SQL Server};SERVER=127.0.0.1;DATABASE=master;UID=UnitTest;PWD=#UnitTest777UnitTest;TrustServerCertificate=Yes"
+   },
   "repository": {
     "git_folder_path":"/home/alexander/PycharmProjects/test_repo",
     "target_folder":"Report"
   },
+   "table_settings":{
+     "table_list":["dbo.test"],
+     "upsert_only_list":[],
+     "delete_only_list":[]
+   },
+   "script_settings":{
+     "days_before":14,
+     "row_limit":500,
+     "file_size_limit":10000000,
+     "upsert_message":"Upsert scripts for table list",
+     "upload_message":"Upload scripts for table list"
+   },
   "liquibase_settings": {
     "skip_update": false,
     "liquibase_path":"/opt/liquibase/liquibase",

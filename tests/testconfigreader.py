@@ -9,9 +9,11 @@ class TestConfigReader:
     def __init__(self):
         self.__config_dict = self.__read_config()
 
-    def get_config(self, config_key):
+    def get_config(self, config_key=None):
         if not self.__config_dict:
             return None
+        if not config_key:
+            return self.__config_dict
         if config_key in self.__config_dict:
             return self.__config_dict[config_key]
         return None
