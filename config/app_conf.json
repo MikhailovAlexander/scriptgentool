@@ -5,8 +5,8 @@
       "conn_string":"DRIVER={ODBC Driver 18 for SQL Server};SERVER=127.0.0.1;DATABASE=master;UID=UnitTest;PWD=#UnitTest777UnitTest;TrustServerCertificate=Yes"
    },
    "repository":{
-      "git_folder_path":"/home/alexander/PycharmProjects/test_repo",
-      "tree_folder":"Report"
+      "git_folder_path":"/usr/src/repo",
+      "target_folder":"Report"
    },
    "table_settings":{
       "table_list":["dbo.test"],
@@ -22,9 +22,10 @@
       "upload_message":"Upload scripts for table list"
    },
    "liquibase_settings": {
-      "skip_update": false,
+      "skip_update":false,
+      "liquibase_cmd":"{0} --defaultsFile={1} --changeLogFile={2} update",
       "liquibase_path":"/opt/liquibase/liquibase",
-      "liquibase_properties_path": "config/liquibase.properties",
-      "liquibase_string": "--liquibase formatted sql\n--changeset author:scriptgenerator stripComments:false dbms:mssql endDelimiter:GO\n"
+      "liquibase_properties_path":"config/liquibase.properties",
+      "liquibase_string":"--liquibase formatted sql\n--changeset author:scriptgenerator stripComments:false dbms:mssql endDelimiter:GO\n"
    }
 }

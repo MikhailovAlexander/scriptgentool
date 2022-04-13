@@ -22,9 +22,10 @@
      "upload_message":"Upload scripts for table list"
    },
   "liquibase_settings": {
-    "skip_update": false,
+    "skip_update":false,
+    "liquibase_cmd":"{0} --defaultsFile={1} --changeLogFile={2} update",
     "liquibase_path":"/opt/liquibase/liquibase",
-    "liquibase_properties_path": "/home/alexander/PycharmProjects/scriptgentool/tests/liquibase.properties",
-    "liquibase_string": "--liquibase formatted sql\n--changeset author:scriptgenerator stripComments:false dbms:mssql endDelimiter:GO\n"
+    "liquibase_properties_path":"/home/alexander/PycharmProjects/scriptgentool/tests/liquibase.properties",
+    "liquibase_string":"--liquibase formatted sql\n--changeset author:scriptgenerator stripComments:false dbms:mssql endDelimiter:GO\n"
   }
 }

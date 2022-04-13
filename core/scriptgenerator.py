@@ -320,7 +320,7 @@ class ScriptGenerator:
             self.__logger.warning("Clear db updating is skipped")
             return
         self.__logger.info("Clear db updating run")
-        cmd = "{0} --defaultsFile={1} --changeLogFile={2} update"
+        cmd = self.__liquibase_settings["liquibase_cmd"]
         cmd = cmd.format(self.__liquibase_settings["liquibase_path"],
                          self.__liquibase_settings["liquibase_properties_path"],
                          self.__target_folder + "/"
