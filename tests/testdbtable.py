@@ -132,7 +132,8 @@ class TestDbTable(unittest.TestCase):
         statement = self.templates.delete_statement.format(TABLE_NAME,
                                                            PRIMARY_KEY_COL,
                                                            str_id_list)
-        self.assertEqual(self.mock_table.get_delete_statement_list(), [statement])
+        self.assertEqual(self.mock_table.get_delete_statement_list(),
+                         [statement])
 
     @unittest.skipIf(not IS_CONNECTED, "Is not connected")
     def test_get_delete_statement_list_multi_row_limit(self):

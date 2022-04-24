@@ -127,7 +127,8 @@ class SqlServerTemplates(SqlTemplates):
         Uses the upsert values list as a placeholder 2.
         Uses the name of the primary key column as a placeholder 3.
         Uses the fields links list as a placeholder 4.
-        Example: trg.column = src.column. The list must not contain a primary key.
+        Example: trg.column = src.column. The list must not contain
+        a primary key.
         Uses the src.column list as a placeholder 5.
         """
         return (

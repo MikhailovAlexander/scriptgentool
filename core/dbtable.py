@@ -112,7 +112,7 @@ class DbTable(object):
 
     def get_upsert_statement_list(self, days_before: int = None,
                                   row_limit: int = None,
-                                  all_rows: bool = False):
+                                  all_rows: bool = False) -> list[str]:
         """Compares the data of two database(work and clear), searches rows
         to update or insert and generate the necessary SQL statements to migrate
         work database to clear. Statements are packaged into scripts by
@@ -167,7 +167,7 @@ class DbTable(object):
                 self.__update_dt_field = column_name
             self.__columns.append(column_name)
 
-    def __get_subordinate_tables(self):
+    def __get_subordinate_tables(self) -> list[str]:
         """Gets a list of database table names containing foreign keys
         to this table
         """
@@ -226,6 +226,5 @@ class DbTable(object):
         except DbError as ex:
             self.__logger.exception(ex)
             self.__logger.error(f'query: {query}')
-            #raise RuntimeError('query execution failed')
-            raise RuntimeError(f'query: {query}')
+            raise RuntimeError('query execution failed')
         return result

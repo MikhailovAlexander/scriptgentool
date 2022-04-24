@@ -8,7 +8,7 @@ class SqlTemplates(metaclass=ABCMeta):
     -------------------
     column_query: str
         SQL query template for getting database table columns by table name
-    sub_tables_query(self) -> str:
+    sub_tables_query -> str:
         SQL query template for getting database table names containing
         foreign keys to this table.
     search_del_query: str

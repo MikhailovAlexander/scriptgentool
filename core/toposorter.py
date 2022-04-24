@@ -217,6 +217,7 @@ class TopoSorter:
         :param adj_dict: a dictionary with vertices as a keys and lists of the
         adjacent vertices as a values.
         :param vertex_process: a function run at the end of vertex processing.
+        :raise: GraphHasLoopError
         :return: None
         """
 
@@ -232,7 +233,7 @@ class TopoSorter:
         colored_vertices[vertex] = VertexColor.BLACK
         vertex_process(vertex)
 
-    def __edges_to_str(self):
+    def __edges_to_str(self) -> str:
         """
         :return: a string representation of a list of graph vertices
         """

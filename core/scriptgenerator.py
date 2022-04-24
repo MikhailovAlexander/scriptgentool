@@ -76,7 +76,7 @@ class ScriptGenerator:
         self.__target_folder: str = target_folder
         self.__repo: Union[Repo, None] = None
         self.__origin: Union[Remote, None] = None
-        self.__changelog_filepath = None
+        self.__changelog_filepath: str = None
         self.__init_git_objects()
             
         self.__committed_files: list[str] = []

@@ -1,5 +1,5 @@
 import os
-from typing import Any, Sequence
+from typing import Any
 import pyodbc
 import logging
 import logging.config
