@@ -242,7 +242,7 @@ class ScriptGenerator:
         self.__logger.info("run")
         table_names = [name.lower() for name in table_list]
         db_table_dict = {}
-        topo_sorter = TopoSorter(table_list)
+        topo_sorter = TopoSorter(table_names)
         for table_name in table_names:
             db_table = DbTable(self.__config_dict, self.__cursor, query_builder,
                                table_name, self.__work_db_name,
