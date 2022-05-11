@@ -86,8 +86,12 @@ class ScriptGenerator:
         self.__liquibase_settings: dict[str: str] = liquibase_settings
         self.__db_table_list:  list[DbTable] = self.__get_db_table_list(
             table_settings["table_list"], query_builder)
-        self.__upsert_only_list: list[str] = table_settings["upsert_only_list"]
-        self.__delete_only_list: list[str] = table_settings["delete_only_list"]
+        self.__upsert_only_list: list[str] = [table.lower() for table in
+                                              table_settings["upsert_only_list"]
+                                              ]
+        self.__delete_only_list: list[str] = [table.lower() for table in
+                                              table_settings["delete_only_list"]
+                                              ]
 
     @property
     def table_names(self) -> list[str]:
