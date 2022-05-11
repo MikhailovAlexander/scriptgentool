@@ -1,0 +1,11 @@
+DELETE FROM IntegrTestWork.[dbo].[RunHistory];
+DELETE FROM IntegrTestClear.[dbo].[RunHistory];
+DELETE FROM IntegrTestWork.[dbo].[ReportParameterLink];
+DELETE FROM IntegrTestClear.[dbo].[ReportParameterLink];
+DELETE FROM IntegrTestWork.[dbo].[Report];
+DELETE FROM IntegrTestClear.[dbo].[Report];
+DELETE FROM IntegrTestWork.[dbo].[Parameter];
+DELETE FROM IntegrTestClear.[dbo].[Parameter];
+DELETE FROM IntegrTestWork.[dbo].[Catalog];
+DELETE FROM IntegrTestClear.[dbo].[Catalog];
+DROP TABLE IF EXISTS IntegrTestClear.dbo.DATABASECHANGELOG;

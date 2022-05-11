@@ -1,21 +1,27 @@
 {
    "connection":{
-      "clear_db_name":"UnitTest_DbTable_Clear",
-      "work_db_name":"UnitTest_DbTable_Work",
-      "conn_string":"DRIVER={ODBC Driver 18 for SQL Server};SERVER=127.0.0.1;DATABASE=master;UID=UnitTest;PWD=#UnitTest777UnitTest;TrustServerCertificate=Yes"
+      "clear_db_name":"IntegrTestClear",
+      "work_db_name":"IntegrTestWork",
+      "conn_string":"DRIVER={ODBC Driver 18 for SQL Server};SERVER=127.0.0.1;DATABASE=IntegrTestClear;UID=IntegrTest;PWD=#IntegrTest2545;TrustServerCertificate=Yes"
    },
    "repository":{
       "git_folder_path":"/usr/src/repo",
       "target_folder":"Report"
    },
    "table_settings":{
-      "table_list":["dbo.test"],
+      "table_list":[
+        "dbo.Catalog",
+        "dbo.Parameter",
+        "dbo.Report",
+        "dbo.ReportParameterLink",
+        "dbo.RunHistory"
+        ],
       "upsert_only_list":[],
       "delete_only_list":[]
    },
    "script_settings":{
       "all_rows":false,
-      "days_before":14,
+      "days_before":null,
       "row_limit":500,
       "file_size_limit":10000000,
       "upsert_message":"Upsert scripts for table list",
@@ -25,7 +31,7 @@
       "skip_update":false,
       "liquibase_cmd":"{0} --defaultsFile={1} --changeLogFile={2} update",
       "liquibase_path":"/opt/liquibase/liquibase",
-      "liquibase_properties_path":"config/liquibase.properties",
+      "liquibase_properties_path":"/usr/src/app/config/liquibase.properties",
       "liquibase_string":"--liquibase formatted sql\n--changeset author:scriptgenerator stripComments:false dbms:mssql endDelimiter:GO\n"
    }
 }
